@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Current Account</title>
+        <link rel="stylesheet" href="frontend.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="backend.js"></script>
+        <script>
+
+            function html(){
+
+                const statement = current_account.get_statement();
+                const ordered_statement = statement.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                return `
+                    <div id="balance">${current_account.get_balance(true)}</div>
+
+                    <div id="statement_sidebar">
+                        <ul id="statement_list">
+                            ${ordered_statement.map(operation => `
+                                <li class='statement_item ${operation.type}'>
+
+                                    <div class='statement_item_icon'>
+                                        <i class="fa-solid fa-money-bill-transfer"></i>
+                                    </div>
+
+                                    <div class='statement_item_container align_left'>
+                                        
+                                        <div class='statement_item_title'>${operation.type}</div>
+                                        <div class='statement_item_amount'>${formatter.format(operation.amount)}</div>
+                                    </div>
+
+                                    <div class='statement_item_container align_right'>
+
+                                        <div class='statement_item_date'>${new Date(operation.created_at).toLocaleTimeString()}</div>
+                                        <div class='statement_item_balance'>${formatter.format(operation.balance)}</div>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            function render(element_selector = '#CurrentAccount'){
+
+                document.querySelector(element_selector).innerHTML = html();
+            }
+
+            function handle_keydown(element, event){
+
+                event.preventDefault();
+
+                if(!Number.isNaN(Number(event.key))){
+
+                    element.setAttribute('data-value', element.dataset.value+event.key);
+                }
+                else if(event.key == 'Backspace'){
+
+                    element.setAttribute('data-value', element.dataset.value.slice(0, -1));
+                }
+
+                render_currency_input(element);
+            }
+
+            function render_currency_input(element){
+
+                const value = element.dataset.value;
+                element.value = formatter.format(Number(value) / 100);
+            }
+        </script>
+    </head>
+
+    <body>
+
+        <header>
+
+            <div id="logo">Current Account</div>
+            <div id="deposit_container">
+                <input id="deposit" type="text" onkeydown="handle_keydown(this, event)" data-value="0">
+                <button onclick="current_account.deposit(deposit.dataset.value/100); render()">Deposit</button>
+            </div>
+            <div id="withdraw_container">
+                <input id="withdraw" type="text" onkeydown="handle_keydown(this, event)" data-value="0">
+                <button onclick="current_account.withdraw(withdraw.dataset.value/100); render()">Withdraw</button>
+            </div>
+        </header>
+        
+        <main>
+            <div id="CurrentAccount"></div>
+        </main>
+
+        <script>
+            
+            let deposit_amount, withdraw_amount;
+
+            render_currency_input(deposit);
+            render_currency_input(withdraw);
+
+            render();
+        </script>
+    </body>
+</html>
