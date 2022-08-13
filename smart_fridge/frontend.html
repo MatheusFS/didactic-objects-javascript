@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Smart Fridge</title>
+        <link rel="stylesheet" href="frontend.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="backend.js"></script>
+        <script>
+
+            function expect_item(id){
+
+                const quantity = prompt('Quanto quer adicionar?', 1);
+
+                if(typeof Number(quantity) === 'number') {
+
+                    fridge.expect_item(id, quantity);
+                    display_list(`#available_list_popup`, false);
+                }
+            }
+
+            function get_shopping_list(){
+
+                display_list(`#shopping_list_popup`);
+            }
+
+            function get_available_list(){
+
+                display_list(`#available_list_popup`);
+            }
+
+            function display_list(selector, bool = true){
+
+                const display = bool ? 'block' : 'none';
+
+                document.querySelector(selector).style.display = display;
+                document.querySelector(`.backdrop`).style.display = display;
+            }
+
+            function render(){
+
+                document.querySelector(`#SmartFridge`).innerHTML = html();
+            }
+
+            function html(){
+
+                const shopping_list = fridge.get_shopping_list();
+
+                return `
+                    <div id="available_list_popup" class="popup">
+                        <h3>Items disponíveis</h3>
+                        <ul id="available_items" class="fridge_items">
+                            ${items.map(item => `
+                                <li>
+                                    <div class="item_icon" style="background-image: url(assets/icons/${item.icon})"></div>
+                                    <span>${item.label}</span>
+                                    <button onclick="expect_item(${item.id})">+ Items esperados</button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+
+                    <div id="sticky_note" class="column">
+                        <h3>
+                            Items esperados
+                            <button id="get_available_list" onclick="get_available_list()">+ Item</button>
+                        </h3>
+                        <ul id="expected_items" class="fridge_items">
+                            ${fridge.expected_items.map(ref => {
+
+                                const item = items.find(item => item.id === ref.id);
+
+                                return `
+                                    <li>
+                                        <div class="item_icon" style="background-image: url(assets/icons/${item.icon})">
+                                            <div class="item_quantity">${ref.quantity}</div>
+                                        </div>
+                                        <span>${item.label}</span>
+                                        <button onclick="fridge.disexpect_item(${item.id})" style='background: #f33; color: white'>Remover</button>
+                                        <button onclick="fridge.buy_item(${item.id})" style='background: #2a0; color: white'>Comprar</button>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div id="fridge" class="column">
+                        <ul id="current_items" class="fridge_items">
+                            ${fridge.current_items.map(ref => {
+
+                                const item = items.find(item => item.id === ref.id);
+
+                                return `
+                                    <li>
+                                        <div class="item_icon" style="background-image: url(assets/icons/${item.icon})">
+                                            <div class="item_quantity">${ref.quantity}</div>
+                                        </div>
+                                        <span>${item.label}</span>
+                                        <button onclick="fridge.use_item(${item.id})">Usar item</button>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div id="shopping_list_popup" class="popup">
+                        <h3>Lista de compras</h3>
+                        <ul id="shopping_list" class="fridge_items">
+                            ${shopping_list.length
+                            ? shopping_list.map(ref => {
+
+                                const item = items.find(item => item.id === ref.id);
+
+                                return `
+                                    <li>
+                                        <div class="item_icon" style="background-image: url(assets/icons/${item.icon})">
+                                            <div class="item_quantity">${ref.quantity}</div>
+                                        </div>
+                                        <span>${item.label}</span>
+                                    </li>
+                                `;
+                            }).join('')
+                            : `<h2 style="text-align:center">VOCÊ NÃO PRECISA COMPRAR NADIE</h2>`}
+                        </ul>
+                    </div>
+                `;
+            }
+        </script>
+    </head>
+
+    <body>
+        <div class="backdrop"></div>
+
+        <main id="SmartFridge"></main>
+
+        <button id="get_shopping_list" onclick="get_shopping_list()">Gerar lista de compras</button>
+
+        <script>
+
+            ['expected_items', 'current_items'].forEach(type => 
+                fridge[type] = JSON.parse(localStorage.getItem(`fridge_${type}`) ?? '[]')
+            );
+
+            render();
+
+            document.querySelector(`.backdrop`).addEventListener('click', e => {
+
+                document.querySelectorAll(`.popup`).forEach(popup => popup.style.display = 'none');
+                e.target.style.display = 'none';
+            });
+        </script>
+    </body>
+</html>
